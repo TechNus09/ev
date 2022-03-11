@@ -8,10 +8,7 @@ from urllib.request import Request, urlopen
 import json
 import nest_asyncio
 import time
-import aiohttp  
-import pandas as pd
-import numpy as np
-import dataframe_image as dfi
+import aiohttp
 
 from db_helper import *
 from evy_helper import *
@@ -21,8 +18,6 @@ nest_asyncio.apply()
      
  
 event_log = {}
-#global lock_state
-#lock_state = True
 
 def crt(data):
     log_file = open("data.json", "w")
@@ -31,7 +26,7 @@ def crt(data):
 
 def get_tasks(session,skill_name):
     tasks = []
-    for k in range(0,4000):  
+    for k in range(0,6250):  
         url='https://www.curseofaros.com/highscores'
         tasks.append(asyncio.create_task(session.get(url+skill_name+'.json?p='+str(k))))
     return tasks
@@ -42,22 +37,22 @@ async def makelog() :
     start = time.time()
     name_list = []
     
-    c_xp = ['mining_xp','woodcutting_xp']
-    c_skill =['-mining', '-woodcutting']
+    c_xp = ['combat_xp','mining_xp','smithing_xp','woodcutting_xp','crafting_xp','fishing_xp','cooking_xp']
+    c_skill =['','-mining','-smithing','-woodcutting','-crafting','-fishing','-cooking']
     
-    for skill_x in range(2):
+    for skill_x in range(7):
         #connector = aiohttp.TCPConnector(limit=80)
         async with aiohttp.ClientSession() as session :
             to_do = get_tasks(session, c_skill[skill_x])
             responses = await asyncio.gather(*to_do)
             for response in responses:
-                fdata = await response.json()
-                for i in range(0,20):
-                    member_temp = { 'ign' : 'name' , 'mining_xp' : 0 , 'woodcutting_xp': 0 , 'total': 0}
-                    player_name = fdata[i]["name"]
-                    xp = fdata[i]["xp"]
+                data = await response.json()
+                for fdata in data:
+                    member_temp = { 'ign' : 'name' , 'combat_xp' : 0 , 'mining_xp' : 0 , 'smithing_xp' : 0 , 'woodcutting_xp': 0 , 'crafting_xp' : 0 , 'fishing_xp' : 0 , 'cooking_xp' : 0 , 'total': 0}
+                    player_name = fdata["name"]
+                    xp = fdata["xp"]
                     tag = player_name.split()[0]                    
-                    if tag.upper() == "OWO":
+                    if tag.upper() == "GOD":
                         if player_name in name_list:
                             event_log[player_name][c_xp[skill_x]]=xp
                             event_log[player_name]["total"] += xp
@@ -113,16 +108,6 @@ async def log(ctx):
     else:
         await ctx.send("logging failed")
     
-@bot.command()
-async def logi(ctx):
-    if os.path.exists("logs.png"):
-        os.remove("logs.png")
-    await ctx.send("dataframing ...")
-    df = pd.DataFrame.from_dict(event_log, orient="index")
-    df_styled = df.style.background_gradient()
-    await ctx.send("imagification ... ")
-    dfi.export(df_styled,"logs.png")
-    await ctx.channel.send('imagification completed', file=d.File("logs.png"))
 
 @bot.command()
 async def create(ctx):
@@ -131,33 +116,6 @@ async def create(ctx):
         await ctx.send("table created")
     else:
         await ctx.send("error")
-
-
-
-#
-#@bot.command()
-#async def lock(ctx):
-#    global lock_state
-#    if lock_state :
-#        await ctx.send("Already Locked.")
-#    else:
-#        #change settings['lock'] to True
-#        s = {'lock':True}
-#        settings = jsing(s)
-#        update('setting',settings)
-#        await ctx.send('cmd "start" locked.')
-#
-#@bot.command()
-#async def unlock(ctx):
-#    global lock_state
-#    if lock_state :
-#        #change settings['lock'] to False
-#        s = {'lock':False}
-#        settings = jsing(s)
-#        update('setting',settings)
-#        await ctx.send('cmd "start" unlocked.')
-#    else:
-#        await ctx.send("Already Locked.")
 
 @bot.command()
 async def start(ctx):
@@ -170,7 +128,7 @@ async def start(ctx):
     msg2 = await ctx.send("saving init records to DB ...")
 
     await msg2.delete()
-    await update('0000',init_log,ctx)
+    await insert(ctx,'0000',init_log)
 
 @bot.command()
 async def end(ctx):
@@ -186,7 +144,7 @@ async def end(ctx):
 
 @bot.command()
 async def event(ctx,skill='total'):
-    if skill.lower() in ['total','mining','woodcutting'] :
+    if skill.lower() == 'total' or skill.lower() in ['combat','mining','smithing','woodcutting','crafting','fishing','cooking'] :
         msg1 = await ctx.send("Fetching newest records")
         old_record = retrieve("0000")
         a = asyncio.run(makelog())
@@ -202,25 +160,18 @@ async def event(ctx,skill='total'):
             await ctx.send(ranking)
             await ctx.send("Overall Xp gain : " + "{:,}".format(oa_xp))
             
-        elif skill.lower() == 'mining':
+        else:
             await msg1.delete()
             ranked_data = RankUp(unranked_data[0])[0]
             oa_xp = RankUp(unranked_data[0])[1]
             ranking = RankList(ranked_data)
-            await ctx.send("Mining LeaderBoard")
+            await ctx.send(f"{skill.capitalize()} LeaderBoard")
             await ctx.send(ranking)
             await ctx.send("Overall Xp gain : " + "{:,}".format(oa_xp))
             
-        elif skill.lower() == 'woodcutting':
-            await msg1.delete()
-            ranked_data = RankUp(unranked_data[1])[0]
-            oa_xp = RankUp(unranked_data[1])[1]
-            ranking = RankList(ranked_data)
-            await ctx.send("Woodcutting LeaderBoard")
-            await ctx.send(ranking)
-            await ctx.send("Overall Xp gain : " + "{:,}".format(oa_xp))
+       
     else :
-        await ctx.send("Invalid Input ! \nPlease use one from : total - mining - woodcutting")
+        await ctx.send("Invalid Input ! \nPlease use one from : total - combat - mining - smithing - woodcutting - crafting - fishing - cooking")
 
 
 
