@@ -18,6 +18,7 @@ nest_asyncio.apply()
      
  
 event_log = {}
+sl = ['combat','mining','smithing','woodcutting','crafting','fishing','cooking']
 
 def crt(data):
     log_file = open("data.json", "w")
@@ -72,7 +73,7 @@ async def makelog() :
 
 
 
-bot = commands.Bot(command_prefix='&')
+bot = commands.Bot(command_prefix='+')
 
 bot.remove_command("help")
 bot.remove_command("date")
@@ -95,7 +96,7 @@ async def on_ready():
 
 @bot.command()
 async def log(ctx):
-    await ctx.send("logging members xp ... ")
+    m1 = await ctx.send("logging members xp ... ")
     if os.path.exists("data.json"):
         os.remove("data.json")
     
@@ -103,9 +104,12 @@ async def log(ctx):
     create = crt(old_record)
    
     if create :
-        await ctx.send("logging finished \nsending log file ...")
+        await m1.delete()
+        m2 = await ctx.send("logging finished \nsending log file ...")
+        await m2.delete()
         await ctx.channel.send('collected data!', file=d.File("data.json"))
     else:
+        await m1.delete()
         await ctx.send("logging failed")
     
 
@@ -128,9 +132,11 @@ async def start(ctx):
     msg2 = await ctx.send("saving init records to DB ...")
 
     await msg2.delete()
-    ins = await insert(ctx,'0000',init_log)
+    ins = await insert('0000',init_log)
     if ins :
         await ctx.send("data saved")
+    else:
+        await ctx.send("init'ing failed")
 
 @bot.command()
 async def end(ctx):
@@ -155,17 +161,18 @@ async def event(ctx,skill='total'):
 
         if skill.lower() == 'total':
             await msg1.delete()
-            ranked_data = RankUp(unranked_data[2])[0]
+            ranked_data = RankUp(unranked_data[7])[0]
             ranking = RankList(ranked_data)
-            oa_xp = RankUp(unranked_data[2])[1]
+            oa_xp = RankUp(unranked_data[7])[1]
             await ctx.send("Total Xp LeaderBoard")
             await ctx.send(ranking)
             await ctx.send("Overall Xp gain : " + "{:,}".format(oa_xp))
             
         else:
+            order = sl.index(skill.lower())
             await msg1.delete()
-            ranked_data = RankUp(unranked_data[0])[0]
-            oa_xp = RankUp(unranked_data[0])[1]
+            ranked_data = RankUp(unranked_data[order])[0]
+            oa_xp = RankUp(unranked_data[order])[1]
             ranking = RankList(ranked_data)
             await ctx.send(f"{skill.capitalize()} LeaderBoard")
             await ctx.send(ranking)
