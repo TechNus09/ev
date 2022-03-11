@@ -128,7 +128,9 @@ async def start(ctx):
     msg2 = await ctx.send("saving init records to DB ...")
 
     await msg2.delete()
-    await insert(ctx,'0000',init_log)
+    ins = await insert(ctx,'0000',init_log)
+    if ins :
+        await ctx.send("data saved")
 
 @bot.command()
 async def end(ctx):
