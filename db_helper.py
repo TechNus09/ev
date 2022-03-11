@@ -43,7 +43,7 @@ async def insert(t_date,e_log):
     cur.execute(insert_query,(t_date,e_log,))
     con.commit()
     cur.close()
-    #await ctx.send("logs saved !!")
+    return True
 
 async def update(t_date,e_log,ctx):
     con = conn()
