@@ -35,13 +35,12 @@ def get_tasks(session,skill_name):
 
 async def makelog() :
     event_log = {}
-    start = time.time()
     name_list = []
     
-    c_xp = ['combat_xp','mining_xp','smithing_xp','woodcutting_xp','crafting_xp','fishing_xp','cooking_xp']
-    c_skill =['','-mining','-smithing','-woodcutting','-crafting','-fishing','-cooking']
+    c_xp = ['combat_xp','magic_xp','mining_xp','smithing_xp','woodcutting_xp','crafting_xp','fishing_xp','cooking_xp','tailoring_xp']
+    c_skill =['','-magic','-mining','-smithing','-woodcutting','-crafting','-fishing','-cooking','-tailoring']
     
-    for skill_x in range(7):
+    for skill_x in range(9):
         #connector = aiohttp.TCPConnector(limit=80)
         async with aiohttp.ClientSession() as session :
             to_do = get_tasks(session, c_skill[skill_x])
@@ -63,10 +62,12 @@ async def makelog() :
                             event_log[player_name]["ign"] = player_name
                             event_log[player_name][c_xp[skill_x]]=xp
                             event_log[player_name]["total"] += xp
-    end = time.time()
-    total_time = math.ceil(end - start)
-    return event_log, total_time
+    return event_log
 
+def crt(data):
+    log_file = open("data.json", "w")
+    log_file = json.dump(data, log_file, indent = 4)
+    return True
 
 
 
